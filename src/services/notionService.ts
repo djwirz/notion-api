@@ -5,12 +5,10 @@ import { Env, WorkoutEntry } from "../utils/types";
 export async function fetchWorkoutTemplateEntries(env: Env): Promise<Record<string, WorkoutEntry[]>> {
 	const notionClient = new NotionClient(env);
 	const templateEntries = await notionClient.queryDatabase(env.WORKOUT_ENTRY_TEMPLATES_DB_ID);
+	console.log("📌 Retrieved workout template entries:", templateEntries.results.length);
 	const templateMap: Record<string, WorkoutEntry[]> = {};
 
-	templateEntries.results.forEach((entry: { properties: { [x: string]: {
-    number: number;
-    relation: any; rich_text: { plain_text: any; }[]; 
-}; }; id: any; }) => {
+	templateEntries.results.forEach((entry) => {
 		const templateId = normalizeId(entry.properties["workout template"]?.relation?.[0]?.id);
 		const exerciseId = normalizeId(entry.properties["Exercise"]?.relation?.[0]?.id);
 
@@ -32,5 +30,7 @@ export async function fetchWorkoutTemplateEntries(env: Env): Promise<Record<stri
 export async function fetchWorkoutTemplateId(workoutId: string, env: Env): Promise<string | undefined> {
 	const notionClient = new NotionClient(env);
 	const data = await notionClient.getPage(workoutId);
-	return data.properties["Workout Template"]?.relation?.[0]?.id ? normalizeId(data.properties["Workout Template"].relation[0].id) : undefined;
+	const workoutTemplateId = data.properties["Workout Template"]?.relation?.[0]?.id ? normalizeId(data.properties["Workout Template"].relation[0].id) : undefined;
+	console.log("📌 Retrieved workout template ID:", workoutTemplateId);
+	return workoutTemplateId;
 }
