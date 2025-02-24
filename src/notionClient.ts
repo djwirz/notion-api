@@ -50,14 +50,11 @@ interface DatabaseResponse {
 
 export async function getWorkoutEntryTemplates(workoutTemplateId: string, env: any) {
   try {
-    const dbResponse = await fetchFromNotion(`databases/${env.NOTION_WORKOUT_TEMPLATES_DB_ID}`, {}, env) as DatabaseResponse;
-    console.log(`[DEBUG] Database properties:`, Object.keys(dbResponse.properties));
-
-    const response = await fetchFromNotion(`databases/${env.NOTION_WORKOUT_TEMPLATES_DB_ID}/query`, {
+    const response = await fetchFromNotion(`databases/${env.NOTION_WORKOUT_ENTRIES_DB_ID}/query`, {
       method: "POST",
       body: JSON.stringify({
         filter: {
-          property: "workout template",
+          property: "Workout Template",
           relation: { contains: workoutTemplateId },
         },
       }),
@@ -68,4 +65,30 @@ export async function getWorkoutEntryTemplates(workoutTemplateId: string, env: a
     console.error(`[ERROR] Failed to fetch workout entry templates for ${workoutTemplateId}:`, error);
     return [];
   }
+}
+
+export async function createWorkoutEntries(workoutId: string, entryTemplates: any[], env: any) {
+  const newEntries = [];
+
+  for (const template of entryTemplates) {
+    const newEntry = {
+      parent: { database_id: env.NOTION_WORKOUT_ENTRIES_DB_ID },
+      properties: {
+        Name: { title: [{ text: { content: template.properties.Name.title[0].plain_text } }] },
+        set: { rich_text: [{ text: { content: template.properties.set.rich_text[0].plain_text } }] },
+        reps: { rich_text: [{ text: { content: template.properties.reps.rich_text[0].plain_text } }] },
+        weight: { rich_text: [{ text: { content: template.properties.weight.rich_text[0].plain_text } }] },
+        Workout: { relation: [{ id: workoutId }] }, // Links it to the planned workout
+      },
+    };
+
+    try {
+      const response = await fetchFromNotion("pages", { method: "POST", body: JSON.stringify(newEntry) }, env);
+      newEntries.push(response);
+    } catch (error) {
+      console.error(`[ERROR] Failed to create workout entry:`, error);
+    }
+  }
+
+  return newEntries;
 }
