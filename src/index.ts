@@ -1,5 +1,5 @@
 import { logApiInteraction } from "./logger";
-import { getWorkoutTemplate } from "./notionClient";
+import { getWorkoutTemplate, getWorkoutEntryTemplates } from "./notionClient";
 
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
@@ -29,12 +29,22 @@ export default {
       // ✅ Log that we successfully retrieved the template
       await logApiInteraction("/api/generateWorkoutEntries", { workoutId, workoutTemplateId }, { message: "Workout Template retrieved" }, "Success", env);
 
-      return new Response(JSON.stringify({ message: "Workout Template retrieved successfully.", workoutTemplateId }), { status: 200 });
-
-      // 🚧 Next step: Fetch Workout Entry Templates (commented out for now)
-      /*
+      // ✅ Fetch Workout Entry Templates
       const entryTemplates = await getWorkoutEntryTemplates(workoutTemplateId, env);
-      */
+
+      // ✅ Log that we successfully retrieved the entry templates
+      await logApiInteraction("/api/generateWorkoutEntries", 
+        { workoutId, workoutTemplateId }, 
+        { message: "Entry Templates retrieved", count: entryTemplates.length }, 
+        "Success", 
+        env
+      );
+
+      return new Response(JSON.stringify({ 
+        message: "Workout data retrieved successfully.", 
+        workoutTemplateId,
+        entryTemplates 
+      }), { status: 200 });
 
     } catch (error: any) {
       console.error("[ERROR] Worker crashed:", error);
