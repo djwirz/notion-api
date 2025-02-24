@@ -1,6 +1,6 @@
 import { Client } from '@notionhq/client';
 import dotenv from 'dotenv';
-import createWorkoutEntry from './createWorkoutEntry.js';
+import createWorkoutEntry from './createWorkoutEntrySDK.js';
 
 dotenv.config();
 

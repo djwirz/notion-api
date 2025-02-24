@@ -11,6 +11,10 @@ const HEADERS = {
 	'Notion-Version': '2022-06-28',
 };
 
+/**
+ * Creates a new workout entry in Notion.
+ * @param {Object} workoutData - The structured data including workoutId, exerciseId, setNumber, reps, weight.
+ */
 async function createWorkoutEntry(workoutData) {
 	const { workoutId, exerciseId, setNumber, reps, weight } = workoutData;
 
@@ -50,11 +54,11 @@ async function createWorkoutEntry(workoutData) {
 // Run only if called directly
 if (process.argv.length > 2) {
 	const workoutData = {
-		workoutId: process.argv[2],
-		exerciseId: process.argv[3],
-		setNumber: process.argv[4] || 1,
-		reps: process.argv[5] || 10,
-		weight: process.argv[6] || 0,
+		workoutId: process.argv[2], // Pass workout ID as first argument
+		exerciseId: process.argv[3], // Pass exercise ID as second argument
+		setNumber: process.argv[4] || 1, // Default to 1 if not provided
+		reps: process.argv[5] || 10, // Default to 10 if not provided
+		weight: process.argv[6] || 0, // Default to 0 if not provided
 	};
 
 	createWorkoutEntry(workoutData);
