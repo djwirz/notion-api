@@ -50,7 +50,9 @@ interface DatabaseResponse {
 
 export async function getWorkoutEntryTemplates(workoutTemplateId: string, env: any) {
   try {
-    const response = await fetchFromNotion(`databases/${env.NOTION_WORKOUT_ENTRIES_DB_ID}/query`, {
+    console.log(`[INFO] Querying workout entries from DB: ${env.WORKOUT_ENTRIES_DB_ID}`);
+
+    const response = await fetchFromNotion(`databases/${env.WORKOUT_ENTRIES_DB_ID}/query`, {
       method: "POST",
       body: JSON.stringify({
         filter: {
@@ -67,12 +69,13 @@ export async function getWorkoutEntryTemplates(workoutTemplateId: string, env: a
   }
 }
 
+
 export async function createWorkoutEntries(workoutId: string, entryTemplates: any[], env: any) {
   const newEntries = [];
 
   for (const template of entryTemplates) {
     const newEntry = {
-      parent: { database_id: env.NOTION_WORKOUT_ENTRIES_DB_ID },
+      parent: { database_id: env.WORKOUT_ENTRIES_DB_ID },
       properties: {
         Name: { title: [{ text: { content: template.properties.Name.title[0].plain_text } }] },
         set: { rich_text: [{ text: { content: template.properties.set.rich_text[0].plain_text } }] },
