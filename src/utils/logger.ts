@@ -1,6 +1,20 @@
-import { fetchFromNotion } from "./notionClient";
+import { Client } from "@notionhq/client";
 
-export async function logApiInteraction(endpoint: string, requestData: any, responseData: any, status: string, env: any) {
+// ✅ Initialize Notion Client
+function getNotionClient(env: any) {
+  return new Client({ auth: env.NOTION_API_KEY });
+}
+
+// ✅ Log API interactions in Notion Inbox DB
+export async function logApiInteraction(
+  endpoint: string,
+  requestData: any,
+  responseData: any,
+  status: string,
+  env: any
+) {
+  const notion = getNotionClient(env);
+
   const body = {
     parent: { database_id: env.NOTION_INBOX_DB_ID },
     properties: {
@@ -13,7 +27,7 @@ export async function logApiInteraction(endpoint: string, requestData: any, resp
   };
 
   try {
-    await fetchFromNotion("pages", { method: "POST", body: JSON.stringify(body) }, env);
+    await notion.pages.create(body);
   } catch (error) {
     console.error(`[ERROR] Failed to log API interaction: ${error}`);
   }
