@@ -49,25 +49,34 @@ interface DatabaseResponse {
 }
 
 export async function getWorkoutEntryTemplates(workoutTemplateId: string, env: any) {
-  try {
-    console.log(`[INFO] Querying workout entries from DB: ${env.WORKOUT_ENTRIES_DB_ID}`);
+  const workoutEntriesDbId = env.WORKOUT_ENTRIES_DB_ID; // Ensure correct DB ID
 
-    const response = await fetchFromNotion(`databases/${env.WORKOUT_ENTRIES_DB_ID}/query`, {
+  if (!workoutEntriesDbId) {
+    console.error("[ERROR] WORKOUT_ENTRIES_DB_ID is missing from environment variables.");
+    throw new Error("Missing WORKOUT_ENTRIES_DB_ID");
+  }
+
+  try {
+    console.log(`[INFO] Querying workout entries linked to template: ${workoutTemplateId}`);
+
+    const response = await fetchFromNotion(`databases/${workoutEntriesDbId}/query`, {
       method: "POST",
       body: JSON.stringify({
         filter: {
-          property: "Workout Template",
+          property: "Workout",
           relation: { contains: workoutTemplateId },
         },
       }),
     }, env) as NotionDatabaseQueryResponse;
-    
+
+    console.log(`[INFO] Found ${response.results.length} workout entry templates.`);
     return response.results || [];
   } catch (error) {
     console.error(`[ERROR] Failed to fetch workout entry templates for ${workoutTemplateId}:`, error);
     return [];
   }
 }
+
 
 
 export async function createWorkoutEntries(workoutId: string, entryTemplates: any[], env: any) {
@@ -82,7 +91,6 @@ export async function createWorkoutEntries(workoutId: string, entryTemplates: an
         reps: { rich_text: [{ text: { content: template.properties.reps.rich_text[0].plain_text } }] },
         weight: { rich_text: [{ text: { content: template.properties.weight.rich_text[0].plain_text } }] },
 
-        // actually creates relation
         Workout: { relation: [{ id: workoutId }] }, 
       },
     };
@@ -97,4 +105,5 @@ export async function createWorkoutEntries(workoutId: string, entryTemplates: an
 
   return newEntries;
 }
+
 
