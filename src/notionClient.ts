@@ -75,13 +75,15 @@ export async function createWorkoutEntries(workoutId: string, entryTemplates: an
 
   for (const template of entryTemplates) {
     const newEntry = {
-      parent: { database_id: env.WORKOUT_ENTRIES_DB_ID },
+      parent: { database_id: env.WORKOUT_ENTRIES_DB_ID }, // Ensure correct DB ID
       properties: {
         Name: { title: [{ text: { content: template.properties.Name.title[0].plain_text } }] },
         set: { rich_text: [{ text: { content: template.properties.set.rich_text[0].plain_text } }] },
         reps: { rich_text: [{ text: { content: template.properties.reps.rich_text[0].plain_text } }] },
         weight: { rich_text: [{ text: { content: template.properties.weight.rich_text[0].plain_text } }] },
-        Workout: { relation: [{ id: workoutId }] }, // Links it to the planned workout
+
+        // actually creates relation
+        Workout: { relation: [{ id: workoutId }] }, 
       },
     };
 
@@ -95,3 +97,4 @@ export async function createWorkoutEntries(workoutId: string, entryTemplates: an
 
   return newEntries;
 }
+
