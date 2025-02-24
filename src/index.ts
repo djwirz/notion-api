@@ -1,5 +1,5 @@
 import { logApiInteraction } from "./logger";
-import { getWorkoutTemplate, getWorkoutEntryTemplates } from "./notionClient";
+import { getWorkoutTemplate, getWorkoutEntryTemplates, createWorkoutEntries } from "./notionClient";
 
 export default {
   async fetch(request: Request, env: any): Promise<Response> {
@@ -32,18 +32,25 @@ export default {
       // ✅ Fetch Workout Entry Templates
       const entryTemplates = await getWorkoutEntryTemplates(workoutTemplateId, env);
 
-      // ✅ Log that we successfully retrieved the entry templates
-      await logApiInteraction("/api/generateWorkoutEntries", 
-        { workoutId, workoutTemplateId }, 
-        { message: "Entry Templates retrieved", count: entryTemplates.length }, 
-        "Success", 
-        env
+      if (!entryTemplates.length) {
+        await logApiInteraction("/api/generateWorkoutEntries", { workoutId, workoutTemplateId }, { error: "No entry templates found" }, "Error", env);
+        return new Response(JSON.stringify({ error: "No workout entries found in template." }), { status: 404 });
+      }
+
+      console.log(`[INFO] Found ${entryTemplates.length} entry templates`);
+
+      // ✅ Generate new workout entries from templates
+      const newEntries = await createWorkoutEntries(workoutId, entryTemplates, env);
+
+      // ✅ Log successful creation
+      await logApiInteraction("/api/generateWorkoutEntries", { workoutId, workoutTemplateId }, 
+        { message: "Workout Entries created", count: newEntries.length }, "Success", env
       );
 
       return new Response(JSON.stringify({ 
-        message: "Workout data retrieved successfully.", 
+        message: "Workout entries generated successfully.", 
         workoutTemplateId,
-        entryTemplates 
+        newEntries 
       }), { status: 200 });
 
     } catch (error: any) {
