@@ -6,23 +6,31 @@ import { Env } from "./utils/types";
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
-		const id = url.searchParams.get("id");
+
+		// Preserve `workout_id` without remapping
+		const workoutId = url.searchParams.get("workout_id");
+		const markdownId = url.searchParams.get("id");
+		const resumeId = url.searchParams.get("id");
 		const type = url.searchParams.get("type");
 
-		if (!id || !type) {
-			return new Response(JSON.stringify({ error: "Missing required parameters (id, type)." }), { status: 400 });
+		// Explicit validation per service type
+		if (type === "workout" && !workoutId) {
+			return new Response(JSON.stringify({ error: "Missing required parameter: workout_id" }), { status: 400 });
+		}
+		if ((type === "pdf" || type === "resume") && !markdownId && !resumeId) {
+			return new Response(JSON.stringify({ error: "Missing required parameter: id" }), { status: 400 });
 		}
 
 		try {
 			switch (type) {
 				case "workout":
-					await duplicateWorkoutEntries(id, env);
+					await duplicateWorkoutEntries(workoutId!, env);
 					break;
 				case "pdf":
-					await processMarkdownToPdf(id);
+					await processMarkdownToPdf(markdownId!);
 					break;
 				case "resume":
-					await processHomepageResumeCreation(id);
+					await processHomepageResumeCreation(resumeId!);
 					break;
 				default:
 					return new Response(JSON.stringify({ error: `Invalid type: ${type}` }), { status: 400 });
