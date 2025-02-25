@@ -1,53 +1,42 @@
-import { Env, NotionResponse, NotionCreateProperties } from "../utils/types";
+import { Env } from "../utils/types";
 
 export class NotionClient {
-	private env: Env;
+	private notionApiKey: string;
+	private debugMode: boolean;
 
 	constructor(env: Env) {
-		this.env = env;
+		this.notionApiKey = env.NOTION_API_KEY;
+		this.debugMode = env.DEBUG === "true";
 	}
 
-	private getHeaders(): HeadersInit {
-		return {
-			Authorization: `Bearer ${this.env.NOTION_API_KEY}`,
-			"Content-Type": "application/json",
-			"Notion-Version": "2022-06-28",
-		};
-	}
+	async createPage(databaseId: string, properties: any) {
+		if (this.debugMode) {
+			console.log(`📝 Creating page in database: ${databaseId}`);
+		}
 
-	async queryDatabase(databaseId: string, body: object = {}): Promise<NotionResponse> {
-		console.log("🔍 Querying Notion database:", databaseId);
-		const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
-			method: "POST",
-			headers: this.getHeaders(),
-			body: JSON.stringify(body),
-		});
-		const data = await response.json() as NotionResponse;
-		console.log("✅ Retrieved database response:", data);
-		return data;
-	}
-
-	async getPage(pageId: string): Promise<any> {
-		console.log("🔍 Fetching Notion page:", pageId);
-		const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-			method: "GET",
-			headers: this.getHeaders(),
-		});
-		const data = await response.json();
-		console.log("✅ Retrieved page response:", data);
-		return data;
-	}
-
-	async createPage(properties: NotionCreateProperties): Promise<string> {
-		console.log("📌 Creating Notion page with properties:", JSON.stringify(properties, null, 2));
 		const response = await fetch("https://api.notion.com/v1/pages", {
 			method: "POST",
-			headers: this.getHeaders(),
-			body: JSON.stringify({ parent: { database_id: this.env.WORKOUT_ENTRIES_DB_ID }, properties }),
+			headers: {
+				Authorization: `Bearer ${this.notionApiKey}`,
+				"Content-Type": "application/json",
+				"Notion-Version": "2022-06-28",
+			},
+			body: JSON.stringify({
+				parent: { database_id: databaseId },
+				properties,
+			}),
 		});
-		const data = await response.json() as { id: string };
-		if (!response.ok) throw new Error(`Failed to create workout entry: ${JSON.stringify(data)}`);
-		console.log("✅ Successfully created Notion entry:", data.id);
-		return data.id;
+
+		const responseData = await response.json();
+
+		if (!response.ok) {
+			console.error(`❌ Notion API error: ${JSON.stringify(responseData)}`);
+			throw new Error(`Notion API request failed`);
+		}
+		if (this.debugMode) {
+			console.log(`✅ Page created: ${(responseData as { id: string }).id}`);
+		}
+
+		return responseData;
 	}
 }
