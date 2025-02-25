@@ -1,4 +1,5 @@
 import { Env } from "../utils/types";
+import { logApiInteraction } from "../utils/logger";
 
 export class NotionClient {
 	private notionApiKey: string;
@@ -9,7 +10,10 @@ export class NotionClient {
 		this.debugMode = env.DEBUG === "true";
 	}
 
-	async createPage(databaseId: string, properties: any) {
+	/**
+	 * Creates a new page in Notion.
+	 */
+	async createPage(databaseId: string, properties: any, env: Env) {
 		if (this.debugMode) {
 			console.log(`📝 Creating page in database: ${databaseId}`);
 		}
@@ -23,7 +27,7 @@ export class NotionClient {
 			},
 			body: JSON.stringify({
 				parent: { database_id: databaseId },
-				properties,
+				properties, // ✅ Fix: Ensure this matches expected Notion API structure
 			}),
 		});
 
@@ -31,12 +35,11 @@ export class NotionClient {
 
 		if (!response.ok) {
 			console.error(`❌ Notion API error: ${JSON.stringify(responseData)}`);
+			await logApiInteraction("/createPage", { databaseId, properties }, responseData, "Failed", env);
 			throw new Error(`Notion API request failed`);
 		}
-		if (this.debugMode) {
-			console.log(`✅ Page created: ${(responseData as { id: string }).id}`);
-		}
 
+		await logApiInteraction("/createPage", { databaseId, properties }, responseData, "Success", env);
 		return responseData;
 	}
 }
