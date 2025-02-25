@@ -31,24 +31,20 @@ export async function duplicateWorkoutEntries(workoutId: string, env: Env): Prom
 
 		console.log(`✅ Duplicating ${templateEntries.length} workout entries...`);
 
-		// Batch API calls (max 3 concurrent requests)
+		// Batch API calls with adaptive throttling
 		const BATCH_SIZE = 3;
 		for (let i = 0; i < templateEntries.length; i += BATCH_SIZE) {
 			const batch = templateEntries.slice(i, i + BATCH_SIZE);
 
 			const results = await Promise.allSettled(
 				batch.map((entry) =>
-					notionClient.createPage(
-						env.WORKOUT_ENTRIES_DB_ID, // ✅ Fix: Ensure correct database ID
-						{
-							Workout: { relation: [{ id: workoutId }] },
-							Exercises: { relation: [{ id: entry.exerciseId }] },
-							set: { rich_text: [{ text: { content: entry.set } }] },
-							weight: { rich_text: [{ text: { content: entry.weight.toString() } }] },
-							reps: { rich_text: [{ text: { content: entry.reps.toString() } }] },
-						},
-						env // ✅ Fix: Ensure env is passed
-					)
+					notionClient.createPage(env.WORKOUT_ENTRIES_DB_ID, {
+						Workout: { relation: [{ id: workoutId }] },
+						Exercises: { relation: [{ id: entry.exerciseId }] },
+						set: { rich_text: [{ text: { content: entry.set } }] },
+						weight: { rich_text: [{ text: { content: entry.weight.toString() } }] },
+						reps: { rich_text: [{ text: { content: entry.reps.toString() } }] },
+					}, env)
 				)
 			);
 
@@ -65,11 +61,11 @@ export async function duplicateWorkoutEntries(workoutId: string, env: Env): Prom
 				await logApiInteraction("/createWorkoutEntry", batch, failedRequests, "Failed", env, true);
 			}
 
-			// Log every batch instead of each request
 			console.log(`✅ Created ${Math.min(i + BATCH_SIZE, templateEntries.length)}/${templateEntries.length} workout entries.`);
 
-			// Avoid rate limits
-			await new Promise((resolve) => setTimeout(resolve, 500));
+			// Adaptive delay to prevent rate limits
+			const delay = failedRequests.length > 0 ? 1500 : 500;
+			await new Promise((resolve) => setTimeout(resolve, delay));
 		}
 
 		console.log("✅ All workout entries successfully duplicated.");
