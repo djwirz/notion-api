@@ -6,19 +6,32 @@ function getNotionClient(env: any) {
 }
 
 /**
- * Logs API interactions in Notion.
+ * Truncate text to Notion's 2000 character limit, stripping unnecessary whitespace.
+ */
+function truncateText(text: string, limit = 2000) {
+	const compactText = JSON.stringify(text).replace(/\s+/g, " ").substring(0, limit);
+	return compactText.length >= limit ? compactText + "..." : compactText;
+}
+
+/**
+ * Logs API interactions in Notion with controlled logging frequency.
  */
 export async function logApiInteraction(
 	endpoint: string,
 	requestData: any,
 	responseData: any,
 	status: string,
-	env: any
+	env: any,
+	forceLog = false // Ensure errors always get logged
 ) {
 	const notion = getNotionClient(env);
 
-	// Avoid exceeding Notion's character limit (2000 chars per rich_text)
-	const truncateText = (text: string) => (text.length > 2000 ? text.substring(0, 2000) + "..." : text);
+	// ✅ Log every 5th request, but always log failures
+	const shouldLog = forceLog || Math.random() < 0.2;
+	if (!shouldLog) {
+		console.log(`[LOG] Skipping Notion log to reduce subrequest load: ${endpoint}`);
+		return;
+	}
 
 	const body = {
 		parent: { database_id: env.NOTION_INBOX_DB_ID },
@@ -26,8 +39,8 @@ export async function logApiInteraction(
 			Name: { title: [{ text: { content: `API Call: ${endpoint}` } }] },
 			Timestamp: { date: { start: new Date().toISOString() } },
 			Status: { select: { name: status } },
-			Request: { rich_text: [{ text: { content: truncateText(JSON.stringify(requestData, null, 2)) } }] },
-			Response: { rich_text: [{ text: { content: truncateText(JSON.stringify(responseData, null, 2)) } }] },
+			Request: { rich_text: [{ text: { content: truncateText(requestData) } }] },
+			Response: { rich_text: [{ text: { content: truncateText(responseData) } }] },
 		},
 	};
 
