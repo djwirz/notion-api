@@ -8,6 +8,8 @@ import { Env, WorkoutEntry } from "../utils/types";
  */
 export async function duplicateWorkoutEntries(workoutId: string, env: Env): Promise<void> {
 	try {
+		console.log(`🏋️‍♂️ Workout service hit with ID: ${workoutId}`);
+
 		const debugMode = env.DEBUG === "true";
 		const notionClient = new NotionClient(env);
 
